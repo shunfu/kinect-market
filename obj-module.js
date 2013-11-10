@@ -1,6 +1,6 @@
 var gl;
 var scene;
-var xoff = 0;
+var xoff = 0, yoff = 0;
 var mvMatrixStack = [];
 
 var triangleVertexPositionBuffer;
@@ -11,8 +11,6 @@ var modelTextureLoaded = false;
 var modelTexture2Loaded = false;
 
 var zoom = -8;
-
-
 
 function initGL(canvas) {
     try {
@@ -133,19 +131,17 @@ function drawScene() {
 
     mat4.perspective(pMatrix, 45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0);
 
-
     mat4.identity(mvMatrix);
     mat4.translate(mvMatrix, mvMatrix, [0, 0.0, zoom]);
 
 
     if(modelLoaded){
         mvPushMatrix();
-        mat4.translate(mvMatrix, mvMatrix, [0, 0, 0.0]);
-        //mat4.rotate(mvMatrix, mvMatrix, 0.3*Math.sin(xoff), [1.0, 0.0, 0.0]);
-        //mat4.rotate(mvMatrix, mvMatrix, 0.4*Math.cos(2*xoff), [0.0, 0.0, 1.0]);
         mat4.rotate(mvMatrix, mvMatrix, xoff, [0.0, 1.0, 0.0]);
-        
-        //mat4.translate(mvMatrix, mvMatrix, [0, 0, 1.0]);
+        mat4.rotate(mvMatrix, mvMatrix, yoff, [1.0, 0.0, 0.0]); 
+        mat4.translate(mvMatrix, mvMatrix, [0, 0, 0.0]);
+       
+
         
         //Bind Vertex Locations
         gl.bindBuffer(gl.ARRAY_BUFFER, modelVertexPositionBuffer);
@@ -159,14 +155,16 @@ function drawScene() {
         gl.bindBuffer(gl.ARRAY_BUFFER, modelVertexTextureBuffer);
         gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, modelVertexTextureBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-        /*//Textures
+        /*
+        //Textures
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, modelTexture);
         gl.uniform1i(shaderProgram.samplerUniform, 0);
 
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, modelTexture2);
-        gl.uniform1i(shaderProgram.samplerUniform2, 1);*/
+        gl.uniform1i(shaderProgram.samplerUniform2, 1);
+        */
 
         //Lighting
         gl.uniform3f(
@@ -214,6 +212,7 @@ function customInvert43(matrix){
     return returnmat;
 }
 
+var overRenderer;
 
 function webGLStart() {
     var canvas = document.getElementById("my-canvas");
@@ -222,6 +221,13 @@ function webGLStart() {
     initGL(canvas);
     initShaders();
     initScene();
+    canvas.addEventListener('mousewheel', onMouseWheel, false);
+    canvas.addEventListener('mouseover', function() {
+      overRenderer = true;
+    }, false);
+    canvas.addEventListener('mouseout', function() {
+      overRenderer = false;
+    }, false);
     initMouseGestures();
     getModelFromFile(modelURL, canvas);
 
@@ -256,29 +262,24 @@ function initMouseGestures() {
             coord.y = event.offsetY;
             coord.x = event.offsetX;
             xoff += .01*xdiff;
-            zoom += .1*ydiff;
-            console.log("doing this");   
+            yoff += .01*ydiff;
+            console.log("rotating");   
         }
-
     });
 }
+
+function onMouseWheel(event) {
+    event.preventDefault();
+    if (overRenderer) {
+      zoom += .005*event.wheelDeltaY;
+    }
+    return false;
+}
+
 function tick(){
-    animate();
     drawScene();
     requestAnimFrame(tick);
 }
-
-var lastTime = 0;
-function animate() {
-var timeNow = new Date().getTime();
-    if (lastTime != 0) {
-        var elapsed = timeNow - lastTime;
-        //xoff += (1 * elapsed) / 1000.0;
-        //rSquare += (75 * elapsed) / 1000.0;
-    }
-    lastTime = timeNow;
-}
-
 
 var modelVertexPositionBuffer;
 var modelVertexTextureBuffer;
@@ -299,7 +300,7 @@ function finishedModelDownload(data){
     var face_pattern1 = /f( +\d+)( +\d+)( +\d+)( +\d+)?/;
     var face_pattern2 = /f( +(\d+)\/(\d+))( +(\d+)\/(\d+))( +(\d+)\/(\d+))( +(\d+)\/(\d+))?/;
     var face_pattern3 = /f( +(\d+)\/(\d+)\/(\d+))( +(\d+)\/(\d+)\/(\d+))( +(\d+)\/(\d+)\/(\d+))( +(\d+)\/(\d+)\/(\d+))?/;
-    var face_pattern4 = /f( +(\d+)\/\/(\d+))( +(\d+)\/\/(\d+))( +(\d+)\/\/(\d+))( +(\d+)\/\/(\d+))?/
+    var face_pattern4 = /f( +(\d+)\/\/(\d+))( +(\d+)\/\/(\d+))( +(\d+)\/\/(\d+))( +(\d+)\/\/(\d+))?/;
 
     for(var i =0; i < lines.length; i++){
         var line = lines[i];
@@ -534,22 +535,6 @@ function mvPopMatrix() {
 }
 function render(a){
     var x = document.getElementById("selection").options[document.getElementById("selection").selectedIndex].value;
-    var filename;
-    if(x == 1) {
-        filename = "teapot.obj";
-    }
-    else if(x == 2) {
-        filename = "cow.obj";
-    }
-    else if(x == 3) {
-        filename = "pumpkin.obj";
-    }
-    else if(x == 4) {
-        filename = "teddy.obj";
-    }
-    else if(x == 5) {
-        filename = "airplane2.obj";
-    }
     var canvas = document.getElementById("my-canvas");
     initGL(canvas);
     initShaders();
