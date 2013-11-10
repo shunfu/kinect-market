@@ -10,7 +10,7 @@ var modelLoaded = false;
 var modelTextureLoaded = false;
 var modelTexture2Loaded = false;
 
-var zoom = -8;
+var zoom = -6.5;
 
 function initGL(canvas) {
     try {
